@@ -52,11 +52,13 @@ colnames(final_data) <- c("line_number", "impcParameterOrigId", "name", "descrip
 head(final_data)
 ```
 ```{r}
-library(dplyr)
-library(tools)  # 用于 toTitleCase
+library(tools)
 
-# 假设你已经读取了 CSV 文件，并且 data 是存储这些数据的 dataframe
-data <- read.csv("1.csv", header = FALSE)
+# 设置文件夹路径
+folder_path <- "data"
+
+# 获取文件夹中所有的 CSV 文件
+csv_files <- list.files(path = "data", pattern = "*.csv", full.names = TRUE)
 
 # final_data 假设已经存在并且包含 parameterId 和 parameter_name 列
 # final_data <- read.csv("final_data.csv")  # 如果 final_data 已经在内存中，就不需要这行代码
@@ -73,118 +75,93 @@ exception_data <- data.frame(
   stringsAsFactors = FALSE
 )
 
-# 遍历每个关键词，找到对应的 B 列值并将其赋值给对应的变量
-for (keyword in keywords) {
-  # 在 A 列中查找关键词，找到对应的 B 列值
-  matching_value <- data[data[, 1] == keyword, 2]
+# 遍历文件夹中的每个 CSV 文件
+for (csv_file in csv_files) {
+  # 读取当前 CSV 文件
+  data <- read.csv(csv_file, header = FALSE)
   
-  # 如果找到对应的值，就将它赋值给相应的变量
-  if (length(matching_value) > 0) {
-    assign(keyword, matching_value)
+  # 提取文件名（不包括路径）
+  file_name_value <- basename(csv_file)
+  
+  # 遍历每个关键词，找到对应的 B 列值并将其赋值给对应的变量
+  for (keyword in keywords) {
+    # 在 A 列中查找关键词，找到对应的 B 列值
+    matching_value <- data[data[, 1] == keyword, 2]
     
-    # 1. 清理 analysis_id (15 字符，字母数字)
-    if (keyword == "analysis_id") {
-      if (nchar(analysis_id) != 15) {
-        exception_data <- rbind(exception_data, data.frame(
-          file_name = "1.csv",
-          variable_name = "analysis_id",
-          abnormal_value = analysis_id,
-          stringsAsFactors = FALSE
-        ))
-        analysis_id <- NA  # 设置为 NA
-      }
-    }
-    
-    # 2. 清理 gene_accession_id (9-11 字符，字母数字)
-    if (keyword == "gene_accession_id") {
-      if (nchar(gene_accession_id) < 9 | nchar(gene_accession_id) > 11) {
-        exception_data <- rbind(exception_data, data.frame(
-          file_name = "1.csv",
-          variable_name = "gene_accession_id",
-          abnormal_value = gene_accession_id,
-          stringsAsFactors = FALSE
-        ))
-        gene_accession_id <- NA  # 设置为 NA
-      }
-    }
-    
-    # 3. 清理 gene_symbol (1-13 字符，标题格式)
-    if (keyword == "gene_symbol") {
-      if (nchar(gene_symbol) < 1 | nchar(gene_symbol) > 13) {
-        exception_data <- rbind(exception_data, data.frame(
-          file_name = "1.csv",
-          variable_name = "gene_symbol",
-          abnormal_value = gene_symbol,
-          stringsAsFactors = FALSE
-        ))
-        gene_symbol <- NA  # 设置为 NA
-      } else {
-        gene_symbol <- toTitleCase(gene_symbol)
-      }
-    }
-    
-    # 4. 清理 mouse_strain (3-5 字符，必须是 C57BL, B6J, C3H, 129SV)
-    if (keyword == "mouse_strain") {
-      valid_strains <- c("C57BL", "B6J", "C3H", "129SV")
-      if (!(mouse_strain %in% valid_strains)) {
-        exception_data <- rbind(exception_data, data.frame(
-          file_name = "1.csv",
-          variable_name = "mouse_strain",
-          abnormal_value = mouse_strain,
-          stringsAsFactors = FALSE
-        ))
-        mouse_strain <- NA  # 设置为 NA
-      }
-    }
-    
-    # 5. 清理 mouse_life_stage (4-17 字符，必须是特定的阶段)
-    if (keyword == "mouse_life_stage") {
-      valid_stages <- c("E12.5", "E15.5", "E18.5", "E9.5", "Early adult", "Late adult", "Middle aged adult")
-      if (!(mouse_life_stage %in% valid_stages)) {
-        exception_data <- rbind(exception_data, data.frame(
-          file_name = "1.csv",
-          variable_name = "mouse_life_stage",
-          abnormal_value = mouse_life_stage,
-          stringsAsFactors = FALSE
-        ))
-        mouse_life_stage <- NA  # 设置为 NA
-      }
-    }
-    
-    # 6. 清理 parameter_id
-    if (keyword == "parameter_id") {
-      # 步骤 1: 检查 parameter_id 是否在 final_data 的 parameterId 列中
-      if (!(parameter_id %in% final_data$parameterId)) {
-        exception_data <- rbind(exception_data, data.frame(
-          file_name = "1.csv",
-          variable_name = "parameter_id",
-          abnormal_value = parameter_id,
-          stringsAsFactors = FALSE
-        ))
-        parameter_id <- NA  # 设置为 NA
-      } else {
-        # 步骤 2: 如果 parameter_id 匹配，则进一步检查 parameter_name 是否一致
-        matching_row <- final_data[final_data$parameterId == parameter_id, ]
-        
-        # 提取匹配行的 parameter_name
-        if (nrow(matching_row) > 0) {
-          final_parameter_name <- matching_row$parameter_name[1]
-          
-          # 如果 final_data 中的 parameter_name 和 csv 中的 parameter_name 不一致，记录异常
-          if (final_parameter_name != parameter_name) {
-            exception_data <- rbind(exception_data, data.frame(
-              file_name = "1.csv",
-              variable_name = "parameter_name",
-              abnormal_value = parameter_name,
-              stringsAsFactors = FALSE
-            ))
-            parameter_name <- NA  # 设置为 NA
-          }
+    # 如果找到对应的值，就将它赋值给相应的变量
+    if (length(matching_value) > 0) {
+      assign(keyword, matching_value)
+      
+      # 1. 清理 analysis_id (15 字符，字母数字)
+      if (keyword == "analysis_id") {
+        if (nchar(analysis_id) != 15) {
+          exception_data <- rbind(exception_data, data.frame(
+            file_name = file_name_value,  # 使用变量 file_name_value
+            variable_name = "analysis_id",
+            abnormal_value = analysis_id,
+            stringsAsFactors = FALSE
+          ))
+          analysis_id <- NA  # 设置为 NA
         }
       }
-    }
-    
-    # 7. 清理 parameter_name (2-74 字符)
+      
+      # 2. 清理 gene_accession_id (9-11 字符，字母数字)
+      if (keyword == "gene_accession_id") {
+        if (nchar(gene_accession_id) < 9 | nchar(gene_accession_id) > 11) {
+          exception_data <- rbind(exception_data, data.frame(
+            file_name = file_name_value,  # 使用变量 file_name_value
+            variable_name = "gene_accession_id",
+            abnormal_value = gene_accession_id,
+            stringsAsFactors = FALSE
+          ))
+          gene_accession_id <- NA  # 设置为 NA
+        }
+      }
+      
+      # 3. 清理 gene_symbol (1-13 字符，标题格式)
+      if (keyword == "gene_symbol") {
+        if (nchar(gene_symbol) < 1 | nchar(gene_symbol) > 13) {
+          exception_data <- rbind(exception_data, data.frame(
+            file_name = file_name_value,  # 使用变量 file_name_value
+            variable_name = "gene_symbol",
+            abnormal_value = gene_symbol,
+            stringsAsFactors = FALSE
+          ))
+          gene_symbol <- NA  # 设置为 NA
+        } else {
+          gene_symbol <- toTitleCase(gene_symbol)
+        }
+      }
+      
+      # 4. 清理 mouse_strain (3-5 字符，必须是 C57BL, B6J, C3H, 129SV)
+      if (keyword == "mouse_strain") {
+        valid_strains <- c("C57BL", "B6J", "C3H", "129SV")
+        if (!(mouse_strain %in% valid_strains)) {
+          exception_data <- rbind(exception_data, data.frame(
+            file_name = file_name_value,  # 使用变量 file_name_value
+            variable_name = "mouse_strain",
+            abnormal_value = mouse_strain,
+            stringsAsFactors = FALSE
+          ))
+          mouse_strain <- NA  # 设置为 NA
+        }
+      }
+      
+      # 5. 清理 mouse_life_stage (4-17 字符，必须是特定的阶段)
+      if (keyword == "mouse_life_stage") {
+        valid_stages <- c("E12.5", "E15.5", "E18.5", "E9.5", "Early adult", "Late adult", "Middle aged adult")
+        if (!(mouse_life_stage %in% valid_stages)) {
+          exception_data <- rbind(exception_data, data.frame(
+            file_name = file_name_value,  # 使用变量 file_name_value
+            variable_name = "mouse_life_stage",
+            abnormal_value = mouse_life_stage,
+            stringsAsFactors = FALSE
+          ))
+          mouse_life_stage <- NA  # 设置为 NA
+        }
+      }
+      
+        # 6. 清理 parameter_name (2-74 字符)
     if (keyword == "parameter_name") {
       if (nchar(parameter_name) < 2 | nchar(parameter_name) > 74) {
         exception_data <- rbind(exception_data, data.frame(
@@ -196,17 +173,51 @@ for (keyword in keywords) {
         parameter_name <- NA  # 设置为 NA
       }
     }
-    
-    # 8. 清理 pvalue (0 到 1 之间)
-    if (keyword == "pvalue") {
-      if (pvalue < 0 | pvalue > 1) {
-        exception_data <- rbind(exception_data, data.frame(
-          file_name = "1.csv",
-          variable_name = "pvalue",
-          abnormal_value = pvalue,
-          stringsAsFactors = FALSE
-        ))
-        pvalue <- NA  # 设置为 NA
+      
+      # 7. 清理 parameter_id
+      if (keyword == "parameter_id") {
+        # 步骤 1: 检查 parameter_id 是否在 final_data 的 parameterId 列中
+        if (!(parameter_id %in% final_data$parameterId)) {
+          exception_data <- rbind(exception_data, data.frame(
+            file_name = file_name_value,  # 使用变量 file_name_value
+            variable_name = "parameter_id",
+            abnormal_value = parameter_id,
+            stringsAsFactors = FALSE
+          ))
+          parameter_id <- NA  # 设置为 NA
+        } else {
+          # 步骤 2: 如果 parameter_id 匹配，则进一步检查 name 是否一致
+          matching_row <- final_data[final_data$parameterId == parameter_id, ]
+          
+          # 提取匹配行的 name
+          if (nrow(matching_row) > 0) {
+            final_parameter_name <- matching_row$name[1]
+            
+            # 如果 final_data 中的 name 和 csv 中的 parameter_name 不一致，记录异常
+            if (final_parameter_name != parameter_name) {
+              exception_data <- rbind(exception_data, data.frame(
+                file_name = file_name_value,  # 使用变量 file_name_value
+                variable_name = "parameter_name",
+                abnormal_value = parameter_name,
+                stringsAsFactors = FALSE
+              ))
+              parameter_name <- NA  # 设置为 NA
+            }
+          }
+        }
+      }
+      
+      # 8. 清理 pvalue (0 到 1 之间)
+      if (keyword == "pvalue") {
+        if (pvalue < 0 | pvalue > 1) {
+          exception_data <- rbind(exception_data, data.frame(
+            file_name = file_name_value,  # 使用变量 file_name_value
+            variable_name = "pvalue",
+            abnormal_value = pvalue,
+            stringsAsFactors = FALSE
+          ))
+          pvalue <- NA  # 设置为 NA
+        }
       }
     }
   }
@@ -216,7 +227,7 @@ for (keyword in keywords) {
 write.csv(exception_data, "exception_data.csv", row.names = FALSE)
 
 # 打印异常数据（可选）
-print(exception_data)
+print(exception_data) 
 
 ```
 ```{r}
