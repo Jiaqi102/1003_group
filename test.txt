@@ -4,11 +4,9 @@ install.packages(c("readr", "dplyr"))
 library(readr)
 library(dplyr)
 ```
+```{r}
 # 1. 读取文件为一列
 data <- readLines("IMPC_parameter_description.txt")
-
-# 2. 查看前几行，确认数据格式
-head(data)
 
 # 3. 去除掉前两行（因为它们是列标题和其他不需要的内容）
 data_clean <- data[-c(1, 2)]
@@ -31,7 +29,6 @@ result_lapply <- lapply(data_split, function(x) {
   # 将 x 扁平化成一个向量
   unlist(x)
 })
-head(result_lapply)
 # 确保每个字符向量都转置成一行
 result_as_df <- lapply(result_lapply, function(x) {
   data.frame(t(x))  # 转置每个向量，使其变成一行
@@ -49,17 +46,50 @@ final_data <- as.data.frame(data_split_df, stringsAsFactors = FALSE)
 colnames(final_data) <- c("line_number", "impcParameterOrigId", "name", "description", "parameterId")
 
 # 11. 查看结果
+# 查看 final_data 中的第1000到2000行
+# 显示查看提取的数据
+
+# 假设 final_data 是你的数据框
+# 查看 'name' 列为空值的行
+empty_rows <- final_data[is.na(final_data$parameterId), ]
+
+# 查看第六列有数据的行
+non_empty_rows <- final_data[!is.na(final_data[[6]]), ]
+final_data <- final_data[!(final_data$parameterId %in% empty_rows$parameterId) & !(final_data[[6]] %in% non_empty_rows[[6]]), ]
+
+# 步骤 3: 将 empty_rows 和 non_empty_rows 存储到新的 CSV 文件
+all_abnormal_data <- rbind(empty_rows, non_empty_rows)
+write.csv(all_abnormal_data, "final_data_2.csv", row.names = FALSE)
+
+# 步骤 4: 查看删除后的 final_data
+read.csv("final_data_2.csv")
+final_data <- final_data[, -((ncol(final_data)-2):ncol(final_data))]
 head(final_data)
+```
+```{r}
+# 1. 读取 Modified final_data_2.csv 并转化为 data.frame
+modified_data <- read.csv("Modified final_data_2.csv")  # 加载 CSV 文件为 data.frame
+
+# 2. 查看 modified_data 的类型
+class(modified_data)  # 应该输出 "data.frame"
+
+head(modified_data)
+head(final_data)
+write.csv(final_data, "final_data.csv", row.names = FALSE)
+```
+```{r}
+# 读取 final_data.csv 并将其转换为 data.frame，保存到 final_data 变量
+final_data <- read.csv("final_data.csv")
+tail(final_data)
+
 ```
 ```{r}
 library(tools)
 library(stringr)  # 用于处理字符串（如标题格式）
 
-# 设置文件夹路径
-folder_path <- "data"
 
 # 获取文件夹中所有的 CSV 文件
-csv_files <- list.files(path = folder_path, pattern = "*.csv", full.names = TRUE)
+csv_files <- list.files(path = "11", pattern = "*.csv", full.names = TRUE)
 
 # final_data 假设已经存在并且包含 parameterId 和 parameter_name 列
 # final_data <- read.csv("final_data.csv")  # 如果 final_data 已经在内存中，就不需要这行代码
@@ -184,20 +214,6 @@ for (csv_file in csv_files) {
     }
   }
   
-  if ("parameter_name" %in% names(file_parameters)) {
-    parameter_name <- file_parameters[["parameter_name"]]
-    if (nchar(parameter_name) < 2 | nchar(parameter_name) > 74) {
-      # 如果 parameter_name 长度不在 2 到 74 之间，记录异常数据
-      exception_data <- rbind(exception_data, data.frame(
-        file_name = file_name_value, 
-        variable_name = "parameter_name",
-        abnormal_value = parameter_name,
-        stringsAsFactors = FALSE
-      ))
-      file_parameters[["parameter_name"]] <- NA  # 设置为 NA
-    }
-  }
-  
   if ("parameter_id" %in% names(file_parameters)) {
     parameter_id <- file_parameters[["parameter_id"]]
     if (!(parameter_id %in% final_data$parameterId)) {
@@ -212,7 +228,15 @@ for (csv_file in csv_files) {
     } else {
       # 如果 parameter_id 匹配，进一步检查 parameter_name 是否一致
       matching_row <- final_data[final_data$parameterId == parameter_id, ]
-      final_parameter_name <- matching_row$name[1]
+          final_parameter_name <- NA  # 初始化 final_parameter_name
+
+# 使用循环检查每个值，直到找到有效数据
+for (name_value in matching_row$name) {
+  if (!is.na(name_value)) {
+    final_parameter_name <- name_value
+    break  # 找到第一个非 NA 值后跳出循环
+  }
+}
       if (final_parameter_name != file_parameters[["parameter_name"]]) {
         # 如果不一致，记录异常数据
         exception_data <- rbind(exception_data, data.frame(
@@ -248,8 +272,6 @@ write.csv(exception_data, "exception_data.csv", row.names = FALSE)
 print(exception_data)
 
 ```
-```{r}
-library(dplyr)
 
 # 获取 data/10 文件夹中的所有 CSV 文件
 csv_files <- list.files(path = "data/10", pattern = "*.csv", full.names = TRUE)
