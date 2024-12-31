@@ -83,6 +83,56 @@ final_data <- read.csv("final_data.csv")
 tail(final_data)
 
 ```
+library(tools)
+
+# 目标文件夹路径，假设当前文件夹有一个子文件夹叫 '10'
+folder_path <- "10"  # 目标子文件夹
+csv_files <- list.files(path = folder_path, pattern = "*.csv", full.names = TRUE)
+
+# 要检查的参数列表
+keywords <- c("gene_accession_id", "gene_symbol", "mouse_strain", "mouse_life_stage", 
+              "parameter_id", "pvalue", "parameter_name", "analysis_id")
+
+# 用于保存缺少参数的文件数据框
+missing_parameters <- data.frame(
+  file_name = character(),  # CSV 文件名
+  missing_parameters = character(),  # 缺少的参数
+  stringsAsFactors = FALSE
+)
+
+# 遍历文件夹中的每个 CSV 文件
+for (csv_file in csv_files) {
+  # 读取当前 CSV 文件，假设第一列是 A 列
+  data <- read.csv(csv_file, header = FALSE)
+  
+  # 提取文件名（不包括路径）
+  file_name_value <- basename(csv_file)
+  
+  # 获取文件中的 A 列内容
+  a_column_values <- data[, 1]
+  
+  # 查找缺少的参数
+  missing_keywords <- setdiff(keywords, a_column_values)
+  
+  if (length(missing_keywords) > 0) {
+    # 如果有缺少的参数，记录该文件和缺少的参数
+    missing_parameters <- rbind(missing_parameters, data.frame(
+      file_name = file_name_value,
+      missing_parameters = paste(missing_keywords, collapse = ", "),  # 缺少的参数以逗号分隔
+      stringsAsFactors = FALSE
+    ))
+  }
+}
+
+# 如果有缺少的参数，保存到新的 CSV 文件
+if (nrow(missing_parameters) > 0) {
+  write.csv(missing_parameters, "missing_parameters.csv", row.names = FALSE)
+} else {
+  print("所有文件都包含所有参数。")
+}
+
+# 打印缺少的参数（可选）
+print(missing_parameters)
 ```{r}
 library(tools)
 library(stringr)  # 用于处理字符串（如标题格式）
