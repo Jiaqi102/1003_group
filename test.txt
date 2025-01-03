@@ -372,3 +372,113 @@ write.csv(combined_data, "combined_data.csv", row.names = FALSE)
 
 
 ```
+```{r}
+data<-read.csv('exception_data.csv')
+# 按照 'variable' 列的值对数据进行排序
+data_sorted <- data[order(data$variable), ]
+head(data_sorted)
+# 提取 variable_name 为 "mouse_life_stage" 的数据
+mouse_life_stage_data <- subset(data, variable_name == "mouse_life_stage")
+
+# 查看提取后的数据
+print(mouse_life_stage_data)
+
+```
+```{r}
+# 定义目标的 abnormal_value 列表
+valid_abnormal_values <- c("E12.5", "E15.5", "E18.5", "E9.5", "Early adult", "Late adult", "Middle aged adult")
+
+# 将 abnormal_value 列转为小写并与目标值的小写进行匹配，避免大小写问题
+mouse_life_stage_data$abnormal_value_lower <- tolower(mouse_life_stage_data$abnormal_value)
+
+# 将目标值转为小写
+valid_abnormal_values_lower <- tolower(valid_abnormal_values)
+
+# 筛选出匹配的行
+matched_data <- mouse_life_stage_data[mouse_life_stage_data$abnormal_value_lower %in% valid_abnormal_values_lower, ]
+
+# 筛选出没有匹配的行
+unmatched_data <- mouse_life_stage_data[!mouse_life_stage_data$abnormal_value_lower %in% valid_abnormal_values_lower, ]
+
+# 查看匹配的数据
+head(matched_data)
+
+# 查看未匹配的数据
+head(unmatched_data)
+```
+```{r}
+# 读取 combined_data.csv 文件
+combined_data <- read.csv('combined_data.csv')
+
+# 查看原始数据，确认结构
+head(combined_data)
+
+# 读取 mouse_life_stage_data 数据框
+# 这里假设 mouse_life_stage_data 已经被提前读取，如果没有，请先读取该数据
+# mouse_life_stage_data <- read.csv('path_to_mouse_life_stage_data.csv')
+
+# 确保 mouse_life_stage_data 和 combined_data 的 file_name 和 analysis_id 列存在
+if ("file_name" %in% colnames(mouse_life_stage_data) && "analysis_id" %in% colnames(combined_data)) {
+
+  # 创建一个包含目标 mouse_life_stage 的标准值列表
+  valid_values <- c("E12.5", "E15.5", "E18.5", "E9.5", "Early adult", "Late adult", "Middle aged adult")
+  
+  # 去除 mouse_life_stage_data 中 file_name 列中的 .csv 后缀，并转化为小写处理
+  mouse_life_stage_data$file_name_clean <- sub("\\.csv$", "", mouse_life_stage_data$file_name)
+
+  # 对于 combined_data 中的 analysis_id 同样去除可能的 .csv 后缀，避免匹配时出错
+  combined_data$analysis_id_clean <- sub("\\.csv$", "", combined_data$analysis_id)
+  
+  # 遍历 mouse_life_stage_data 中的每一行，查找匹配的 analysis_id
+  for (i in 1:nrow(mouse_life_stage_data)) {
+    # 获取当前 file_name_clean
+    current_file <- mouse_life_stage_data$file_name_clean[i]
+    
+    # 在 combined_data 中找到对应的行（按 analysis_id 匹配）
+    matched_row_index <- which(combined_data$analysis_id_clean == current_file)
+    
+    # 如果找到了匹配的行
+    if (length(matched_row_index) > 0) {
+      # 获取当前 mouse_life_stage 列的值
+      current_value <- combined_data$mouse_life_stage[matched_row_index]
+      
+      # 如果当前值不在目标值列表中，则进行大小写转换
+      if (!(current_value %in% valid_values)) {
+        # 自定义大小写转换：只将特定值转换为 "Early adult", "Late adult", "Middle aged adult"
+        if (current_value == "early adult") {
+          combined_data$mouse_life_stage[matched_row_index] <- "Early adult"
+        } else if (current_value == "late adult") {
+          combined_data$mouse_life_stage[matched_row_index] <- "Late adult"
+        } else if (current_value == "middle aged adult") {
+          combined_data$mouse_life_stage[matched_row_index] <- "Middle aged adult"
+        } else {
+          # 对其他值进行正常的首字母大写（如 E12.5, E9.5 等）
+          combined_data$mouse_life_stage[matched_row_index] <- tools::toTitleCase(current_value)
+        }
+      }
+    }
+  }
+  
+  # 将更新后的数据保存回原始文件
+  write.csv(combined_data, 'combined_data.csv', row.names = FALSE)
+  
+  # 查看更新后的数据
+  head(combined_data)
+
+} else {
+  print("列 'file_name' 或 'analysis_id' 不存在")
+}
+
+```
+```{r}
+# 读取原始 CSV 文件
+combined_data <- read.csv("combined_data.csv")
+
+# 删除 "I" 列
+combined_data <- combined_data[, !(names(combined_data) == "I")]
+
+# 保存修改后的数据回原文件
+write.csv(combined_data, "combined_data.csv", row.names = FALSE)
+
+
+```
