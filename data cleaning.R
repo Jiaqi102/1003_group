@@ -139,7 +139,7 @@ library(stringr)  # 用于处理字符串（如标题格式）
 
 
 # 获取文件夹中所有的 CSV 文件
-csv_files <- list.files(path = "11", pattern = "*.csv", full.names = TRUE)
+csv_files <- list.files(path = "10", pattern = "*.csv", full.names = TRUE)
 
 # final_data 假设已经存在并且包含 parameterId 和 parameter_name 列
 # final_data <- read.csv("final_data.csv")  # 如果 final_data 已经在内存中，就不需要这行代码
