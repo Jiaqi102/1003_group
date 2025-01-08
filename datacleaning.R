@@ -653,3 +653,23 @@ unique_parameters <- unique(parameter_name_data$abnormal_value)
 print(unique_parameters)
 #和参考文件做比较发现不用清理
 ```
+```{r}
+# 1. 读取 combined_data.csv 文件
+combined_data <- read.csv("combined_data.csv")
+
+# 2. 查找完全相同的行，并去除重复，保留第一次出现的行
+combined_data_unique <- combined_data[!duplicated(combined_data[c("gene_accession_id", 
+                                                                  "gene_symbol", 
+                                                                  "mouse_strain", 
+                                                                  "mouse_life_stage", 
+                                                                  "parameter_id", 
+                                                                  "pvalue", 
+                                                                  "parameter_name")]), ]
+
+# 3. 查看去重后的数据
+head(combined_data_unique)
+
+# 4. 保存去重后的数据回原文件
+write.csv(combined_data_unique, "combined_data.csv", row.names = FALSE)
+
+```
