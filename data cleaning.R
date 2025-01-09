@@ -616,21 +616,26 @@ print(parameter_id_data)
 
 ```
 ```{r}
+# 1. Load the original data
 combined_data <- read.csv("combined_data.csv")
 
-# 2. Assume parameter_id_data is already a data frame
+# 2. Assume parameter_id_data is already a dataframe
 # Remove the '.csv' suffix from the 'file_name' column
 parameter_id_data$file_name_without_csv <- gsub("\\.csv$", "", parameter_id_data$file_name)
 
-# 3. Match 'file_name_without_csv' with 'analysis_id' and find the matching rows
-# Use %in% to check if 'analysis_id' is present in 'file_name_without_csv'
+# 3. Match 'file_name_without_csv' and 'analysis_id', and find the matching rows
 to_remove <- combined_data$analysis_id %in% parameter_id_data$file_name_without_csv
 
-# 4. Remove the matching rows
-combined_data_cleaned <- combined_data[!to_remove, ]
+# 4. Extract the matching rows and save them to the newtype.csv file
+matched_data <- combined_data[to_remove, c("gene_accession_id", "gene_symbol", "mouse_strain", 
+                                           "mouse_life_stage", "parameter_id", "pvalue", 
+                                           "parameter_name", "analysis_id")]
+write.csv(matched_data, "newtype.csv", row.names = FALSE)
 
-# 5. Save to the original file
+# 5. Remove the matching rows and save the cleaned data back to the original file
+combined_data_cleaned <- combined_data[!to_remove, ]
 write.csv(combined_data_cleaned, "combined_data.csv", row.names = FALSE)
+
 
 ```
 
