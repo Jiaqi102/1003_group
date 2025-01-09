@@ -501,13 +501,13 @@ analysis_id_data <- data_sorted[data_sorted$variable_name == "analysis_id", ]
 # View the filtered data
 print(analysis_id_data)
 
-gene_symbol_data <- data_sorted[data_sorted$variable_name == "gene_symbol", ]
+gene_accsion_id_data <- data_sorted[data_sorted$variable_name == "gene_accsion_id", ]
 
 # Merge data
-# Here, merging means assigning the filtered data to the gene_symbol data frame
+# Here, merging means assigning the filtered data to the gene_accsion_id data frame
 
 # View the filtered data
-print(gene_symbol_data)
+print(gene_accsion_id_data)
 
 ```
 ```{r}
