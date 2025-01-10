@@ -29,8 +29,8 @@ ui <- fluidPage(
       conditionalPanel(
         condition = "input.view_type == 'View phenotype by genes'",
         textInput("gene_symbol", "Enter Gene Symbol:", value = "BRCA1"),
-        numericInput("n", "Select number of red bars (pvalue < 0.05):", value = 5, min = 1),
-        numericInput("a", "Select number of blue bars (pvalue >= 0.05):", value = 5, min = 1),
+        numericInput("n", "Select number (pvalue < 0.05):", value = 5, min = 1),
+        numericInput("a", "Select number (pvalue >= 0.05):", value = 5, min = 1),
         actionButton("submit1", "Submit")
       ),
       
@@ -38,8 +38,8 @@ ui <- fluidPage(
       conditionalPanel(
         condition = "input.view_type == 'View genes by phenotype'",
         textInput("parameter_name", "Enter Parameter Name:", value = "parameter1"),
-        numericInput("n2", "Select number of red bars (pvalue < 0.05):", value = 5, min = 1),
-        numericInput("a2", "Select number of blue bars (pvalue >= 0.05):", value = 5, min = 1),
+        numericInput("n2", "Select number (pvalue < 0.05):", value = 5, min = 1),
+        numericInput("a2", "Select number (pvalue >= 0.05):", value = 5, min = 1),
         actionButton("submit2", "Submit")
       )
     ),
