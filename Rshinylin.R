@@ -124,5 +124,80 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 
 ```
+# Load necessary libraries
+library(tidyverse)
+library(shiny)
+library(shinydashboard)
+library(viridis)
+
+# Read the data
+data <- read.csv("Disease.csv")
+
+# Perform clustering on phenodigm_score (KMeans)
+set.seed(123)  # Set the random seed to ensure reproducibility
+kmeans_result <- kmeans(data$phenodigm_score, centers = 10)
+
+# Add the clustering result to the data frame
+data$cluster <- kmeans_result$cluster
+
+# Create Shiny dashboard
+ui <- dashboardPage(
+  dashboardHeader(title = "Disease Gene Clusters Dashboard"),
+  dashboardSidebar(
+    sidebarMenu(
+      menuItem("Phenodigm Score Distribution", tabName = "score_dist", icon = icon("bar-chart")),
+      menuItem("Cluster Summary", tabName = "cluster_summary", icon = icon("list"))
+    )
+  ),
+  dashboardBody(
+    tabItems(
+      # Phenodigm Score Distribution Tab
+      tabItem(tabName = "score_dist",
+              fluidRow(
+                box(width = 12, plotOutput("score_plot"))
+              )
+      ),
+      
+      # Cluster Summary Tab
+      tabItem(tabName = "cluster_summary",
+              fluidRow(
+                box(width = 12, tableOutput("cluster_table"))
+              )
+      )
+    )
+  )
+)
+
+# Create Server function
+server <- function(input, output) {
+  
+  # Visualize the distribution of Phenodigm Score
+  output$score_plot <- renderPlot({
+    ggplot(data, aes(x = phenodigm_score, fill = factor(cluster))) +
+      geom_histogram(binwidth = 1, color = "black", alpha = 0.7) +
+      scale_fill_viridis_d() +
+      labs(title = "Phenodigm Score Distribution by Cluster",
+           x = "Phenodigm Score",
+           y = "Frequency",
+           fill = "Cluster") +
+      theme_minimal()
+  })
+  
+  # Show statistics for each cluster
+  output$cluster_table <- renderTable({
+    data %>%
+      group_by(cluster) %>%
+      summarise(
+        avg_score = mean(phenodigm_score),
+        min_score = min(phenodigm_score),
+        max_score = max(phenodigm_score),
+        count = n()
+      )
+  })
+}
+
+# Run the Shiny application
+shinyApp(ui = ui, server = server)
+
 
 
