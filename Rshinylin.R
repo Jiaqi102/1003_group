@@ -124,23 +124,29 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 
 ```
-# Load necessary libraries
+
+# 加载必要的库
 library(tidyverse)
 library(shiny)
 library(shinydashboard)
 library(viridis)
 
-# Read the data
+# 读取数据
 data <- read.csv("Disease.csv")
 
-# Perform clustering on phenodigm_score (KMeans)
-set.seed(123)  # Set the random seed to ensure reproducibility
-kmeans_result <- kmeans(data$phenodigm_score, centers = 10)
+# 对phenodigm_score进行标准化
+scores <- scale(data$phenodigm_score)
 
-# Add the clustering result to the data frame
-data$cluster <- kmeans_result$cluster
+# 计算距离矩阵
+dist_matrix <- dist(scores, method = "euclidean")
 
-# Create Shiny dashboard
+# 执行层次聚类
+hc <- hclust(dist_matrix, method = "ward.D2")
+
+# 将分组结果添加到数据框
+data$cluster <- cutree(hc, k = 10)  # 假设分成2个簇，可以根据实际情况调整k
+
+# 创建Shiny仪表盘
 ui <- dashboardPage(
   dashboardHeader(title = "Disease Gene Clusters Dashboard"),
   dashboardSidebar(
@@ -168,10 +174,10 @@ ui <- dashboardPage(
   )
 )
 
-# Create Server function
+# 创建Server函数
 server <- function(input, output) {
   
-  # Visualize the distribution of Phenodigm Score
+  # 可视化Phenodigm Score的分布
   output$score_plot <- renderPlot({
     ggplot(data, aes(x = phenodigm_score, fill = factor(cluster))) +
       geom_histogram(binwidth = 1, color = "black", alpha = 0.7) +
@@ -183,7 +189,7 @@ server <- function(input, output) {
       theme_minimal()
   })
   
-  # Show statistics for each cluster
+  # 显示每个簇的统计信息
   output$cluster_table <- renderTable({
     data %>%
       group_by(cluster) %>%
@@ -196,7 +202,7 @@ server <- function(input, output) {
   })
 }
 
-# Run the Shiny application
+# 运行Shiny应用
 shinyApp(ui = ui, server = server)
 
 
